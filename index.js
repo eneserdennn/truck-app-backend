@@ -4,7 +4,9 @@ import modelsRouter from "./routes/models.js";
 import spareRoutes from "./routes/spares.js";
 import cookieParser from "cookie-parser";
 const app = express();
+import cors from "cors";
 
+app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
 app.use("/api/brands", brandsRouter);
