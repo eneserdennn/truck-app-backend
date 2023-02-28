@@ -1,112 +1,45 @@
 import {db} from "../db/db.js";
 
-export const getSpares = (req, res) => {
-    const q = "SELECT * FROM spares";
+export const getSpares = async (req, res) => {
+    const spares = await db.promise().query("SELECT * FROM spares");
+    res.json(spares[0]);
 
-    db.query(q, (err, data) => {
-        if (err) return res.send({error: "Error fetching spares data"});
+}
 
-        return res.status(200).json(data);
-    });
-};
+export const getSpare = async (req, res) => {
+    const spare = await db.promise().query("SELECT * FROM spares WHERE id = ?", [req.params.id]);
+    res.json(spare[0]);
+}
 
-export const getSpare = (req, res) => {
-    const id = req.params.id;
-    const q = "SELECT * FROM spares WHERE id = ?";
+export const postSpare = async (req, res) => {
+    try {
+        const { sparePartName, sparePartOemNo, sparePartImage, sparePartAlternateNo, stockState, modelId } = req.body;
+        const newSpare = await db.promise().query("INSERT INTO spares SET ?", {sparePartName, sparePartOemNo, sparePartImage, sparePartAlternateNo, stockState, modelId});
+        res.status(201).json({message: "Spare part added successfully"});
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({message: "Internal server error"});
 
-    db.query(q, [id], (err, data) => {
-        if (err) return res.send({error: "Error fetching spare data"});
-
-        return res.status(200).json(data[0]);
-    });
-};
-
-export const postSpare = (req, res) => {
-    const {sparePartName, sparePartOemNo, sparePartImage, sparePartAlternateNo, stockState, modelId} = req.body;
-
-    if (!sparePartName || !sparePartOemNo || !sparePartImage || !modelId) {
-        return res.status(400).send({error: "Spare part name, oem no, image and model id are required"});
     }
+}
 
-    const q = "INSERT INTO spares (sparePartName, sparePartOemNo, sparePartImage, sparePartAlternateNo, stockState, modelId) VALUES (?, ?, ?, ?, ?, ?)";
-
-    const token = req.cookies.access_token;
-
-    if (!token) {
-        return res.status(401).json({message: "Unauthorized"});
-    } else {
-        if (!sparePartName) {
-            return res.status(400).json({message: "Spare part name is required."});
-        }
-        if (!sparePartOemNo) {
-            return res.status(400).json({message: "Spare part oem no is required."});
-        }
-        if (!sparePartImage) {
-            return res.status(400).json({message: "Spare part image is required."});
-        }
-        if (!modelId) {
-            return res.status(400).json({message: "Model ID is required."});
-        }
-
-        db.query(
-            q,
-            [sparePartName, sparePartOemNo, sparePartImage, sparePartAlternateNo || "", stockState || "", modelId],
-            (err, data) => {
-                if (err) return res.send({error: "Error inserting spare part data"});
-
-                return res.status(201).send({message: "Spare part added successfully"});
-            }
-        );
+export const deleteSpare = async (req, res) => {
+    try {
+        const spare = await db.promise().query("DELETE FROM spares WHERE id = ?", [req.params.id]);
+        res.json({message: "Spare part deleted successfully"})
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({message: "Internal server error"});
     }
-};
+}
 
-export const updateSpare = (req, res) => {
-    const {id} = req.params;
-    const {sparePartName, sparePartOemNo, sparePartImage, sparePartAlternateNo, stockState, modelId} = req.body;
-
-    const q = "UPDATE spares SET sparePartName = ?, sparePartOemNo = ?, sparePartImage = ?, sparePartAlternateNo = ?, stockState = ?, modelId = ? WHERE id = ?";
-
-    const token = req.cookies.access_token;
-
-    if (!token) {
-        return res.status(401).json({message: "Unauthorized"});
-    } else {
-        if (!sparePartName) {
-            return res.status(400).json({message: "Spare part name is required."});
-        }
-        if (!sparePartOemNo) {
-            return res.status(400).json({message: "Spare part oem no is required."});
-        }
-        if (!sparePartImage) {
-            return res.status(400).json({message: "Spare part image is required."});
-        }
-        if (!modelId) {
-            return res.status(400).json({message: "Model ID is required."});
-        }
-
-        db.query(q, [sparePartName, sparePartOemNo, sparePartImage, sparePartAlternateNo, stockState, modelId, id], (err, data) => {
-            if (err) return res.send(err);
-
-            return res.status(200).json({
-                message: "Spare part updated successfully."
-            });
-        });
+export const updateSpare = async (req, res) => {
+    try {
+        const { sparePartName, sparePartOemNo, sparePartImage, sparePartAlternateNo, stockState, modelId } = req.body;
+        const updatedSpare = await db.promise().query("UPDATE spares SET sparePartName = ?, sparePartOemNo = ?, sparePartImage = ?, sparePartAlternateNo = ?, stockState = ?, modelId = ? WHERE id = ?", [sparePartName, sparePartOemNo, sparePartImage, sparePartAlternateNo, stockState, modelId, req.params.id]);
+        res.json({message: "Spare part updated successfully"})
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({message: "Internal server error"});
     }
-};
-
-export const deleteSpare = (req, res) => {
-    const id = req.params.id;
-    const q = "DELETE FROM spares WHERE id = ?";
-
-    const token = req.cookies.access_token;
-
-    if (!token) {
-        return res.status(401).json({message: "Unauthorized"});
-    } else {
-        db.query(q, [id], (err, data) => {
-            if (err) return res.send(err);
-
-            return res.status(200).send({message: "Spare part deleted successfully"});
-        });
-    }
-};
+}

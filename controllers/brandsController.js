@@ -1,88 +1,44 @@
 import {db} from "../db/db.js";
 
-export const getBrands = (req, res) => {
-    const q = "SELECT * FROM brands";
+export const getBrands = async (req, res) => {
+    const brands = await db.promise().query("SELECT * FROM brands");
+    res.json(brands[0]);
+}
 
-    db.query(q, (err, data) => {
-        if (err) return res.send(err);
+export const getBrand = async (req, res) => {
+    const brand = await db.promise().query("SELECT * FROM brands WHERE id = ?", [req.params.id]);
+    res.json(brand[0]);
+}
 
-        return res.status(200).json(data);
-    });
-};
-export const getBrand = (req, res) => {
-    const id = req.params.id;
-    const q = "SELECT * FROM brands WHERE id = ?";
-
-    db.query(q, [id], (err, data) => {
-        if (err) return res.send(err);
-
-        return res.status(200).json(data[0]);
-    });
-};
-
-export const postBrand = (req, res) => {
-    const brandImage = req.body.brandImage;
-    const brandName = req.body.brandName;
-
-    if (!brandImage) {
-        return res.status(400).json({message: "Brand image is required."});
+export const postBrand = async (req, res) => {
+    try {
+        const { brandName, brandImage } = req.body;
+        await db.promise().query("INSERT INTO brands SET ?", {brandName, brandImage});
+        res.status(201).json({message: "Brand added successfully"});
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({message: "Internal server error"});
     }
+}
 
-    if (!brandName) {
-        return res.status(400).json({message: "Brand name is required."});
+export const deleteBrand = async (req, res) => {
+    try {
+        await db.promise().query("DELETE FROM brands WHERE id = ?", [req.params.id]);
+        res.json({message: "Brand deleted successfully"})
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({message: "Internal server error"});
     }
+}
 
-
-    const q = "INSERT INTO brands (brandImage, brandName) VALUES (?, ?)";
-
-    const token = req.cookies.access_token;
-    if (!token) {
-        return res.status(401).json({message: "Unauthorized"});
-    } else {
-        db.query(q, [brandImage, brandName], (err, data) => {
-            if (err) return res.send(err);
-
-            return res.status(201).json({message: "Brand added successfully."});
-        });
+export const updateBrand = async (req, res) => {
+    try {
+        const { brandName, brandImage } = req.body;
+        await db.promise().query("UPDATE brands SET brandName = ?, brandImage = ? WHERE id = ?", [brandName, brandImage, req.params.id]);
+        res.json({message: "Brand updated successfully"})
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({message: "Internal server error"});
     }
-};
-
-export const updateBrand = (req, res) => {
-    const {id} = req.params;
-    const {brandImage, brandName} = req.body;
-
-    const q = "UPDATE brands SET brandImage = ?, brandName = ? WHERE id = ?";
-
-    const token = req.cookies.access_token;
-    if (!token) {
-        return res.status(401).json({message: "Unauthorized"});
-    } else {
-        db.query(q, [brandImage, brandName, id], (err, data) => {
-            if (err) return res.send(err);
-
-            return res.status(200).json({
-                message: "Brand updated successfully."
-            });
-        });
-    }
-};
-
-
-export const deleteBrand = (req, res) => {
-    const id = req.params.id;
-
-    const q = "DELETE FROM brands WHERE id = ?";
-
-    const token = req.cookies.access_token;
-    if (!token) {
-        return res.status(401).json({message: "Unauthorized"});
-    } else {
-        db.query(q, [id], (err, data) => {
-            if (err) return res.send(err);
-
-            return res.status(200).json({message: "Brand deleted successfully."});
-        });
-    }
-};
-
+}
 

@@ -1,58 +1,82 @@
-import { db } from "../db/db.js";
-import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
+import { db} from "../db/db.js";
 
+// @desc Register new user
+// @route POST /api/auth/register
+// @access Public
+
+
+// const users = await db.promise().query("SELECT * FROM users");
 export const register = async (req, res) => {
-    // CHECK IF USER ALREADY EXISTS
-    const q = "SELECT * FROM users WHERE email = ? OR username = ?";
+    const { username, email, password } = req.body;
 
-    db.query(q, [req.body.email, req.body.username], (err, data) => {
-        if (err) return res.json(err);
-        if (data.length > 0) return res.json("User already exists");
+    if (!username || !email || !password) {
+        res.status(400);
+        throw new Error("Please fill all fields");
+    }
 
-        // HASH PASSWORD AND CREATE USER
-        const salt = bcrypt.genSaltSync(10);
-        const hash = bcrypt.hashSync(req.body.password, salt);
+    // Check if user exists
+    const user = await db.promise().query("SELECT * FROM users WHERE email = ?", [email]);
+    if (user[0].length > 0) {
+        res.status(400);
+        return res.json({message: "User already exists"});
+    }
 
-        const q = "INSERT INTO users (`username`, `email`, `password`) VALUES (?)";
-        const values = [req.body.username, req.body.email, hash];
 
-        db.query(q, [values], (err, data) => {
-            if (err) return res.json(err);
-            return res.status(200).json("User created successfully");
-        });
-    });
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Create user
+    const newUser = await db.promise().query("INSERT INTO users SET ?", {username, email, password: hashedPassword});
+    res.status(201).json({username, email});
+
 }
+
+// @desc Login user
+// @route POST /api/auth/login
+// @access Public
 
 export const login = async (req, res) => {
-    const q = "SELECT * FROM users WHERE username = ?";
+    const { username, password } = req.body;
 
-    db.query(q, [req.body.username], (err, data) => {
-        if (err) return res.json(err);
-        if (data.length < 1) return res.json("User not found");
+    if (!username || !password) {
+        res.status(400);
+        throw new Error("Please fill all fields");
+    }
 
-        const user = data[0];
+    // Check if user exists
+    const user = await db.promise().query("SELECT * FROM users WHERE username = ?", [username]);
+    if (user[0].length === 0) {
+        res.status(400);
+        return res.json({message: "User does not exist"});
+    }
 
-        // COMPARE PASSWORD
-        const isPasswordCorrect = bcrypt.compareSync(req.body.password, user.password);
+    // Check if password is correct
+    const isMatch = await bcrypt.compare(password, user[0][0].password);
+    if (!isMatch) {
+        res.status(400);
+        return res.json({message: "Invalid credentials"});
+    }
 
-        if (!isPasswordCorrect) return res.status(401).json({ message: "Wrong password" });
+    // Create and assign token
+    const generateToken = (user) => {
+        const token = jwt.sign({id: user[0][0].id}, process.env.JWT_SECRET, {expiresIn: "1h"});
+        return token;
+    }
 
-        const token = jwt.sign({ id: user.id }, "jwtkey");
-        const { password, ...other } = user;
+    const token = generateToken(user);
+    res.cookie("token", token, {httpOnly: true});
+    res.status(200).json({token});
 
-        res.cookie("access_token", token, {
-            httpOnly: true,
-        }).status(200).json({token: token});
-
-    });
 
 }
+
+// @desc Logout user
+// @route POST /api/auth/logout
+// @access Private
 
 export const logout = async (req, res) => {
-    res.clearCookie("access_token", {
-        sameSite: "none",
-        secure: true,
-    }).status(200).json({ message: "Logged out" });
+    res.json({message: "Logout User"});
 }
-
