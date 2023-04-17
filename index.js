@@ -13,7 +13,14 @@ import cors from "cors";
 
 dotenv.config();
 
-app.use(cors());
+app.use(
+    cors({
+        credentials: true,
+        methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+        allowedHeaders: ['Content-Type', 'Authorization'],
+        origin: ['http://localhost:3000/', 'http://localhost:3030/'], // whatever ports you used in frontend
+    })
+);
 app.use(express.json());
 app.use(cookieParser());
 app.use("/api/brands", brandsRouter);
