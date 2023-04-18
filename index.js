@@ -1,6 +1,6 @@
 import * as dotenv from "dotenv";
 import express from "express";
-
+import cors from "cors";
 import brandsRouter from "./routes/brandsRoute.js";
 import modelsRouter from "./routes/modelsRoute.js";
 import spareRoutes from "./routes/sparesRoute.js";
@@ -9,20 +9,18 @@ import authRoutes from "./routes/auth.js";
 
 import cookieParser from "cookie-parser";
 const app = express();
-import cors from "cors";
+
 
 dotenv.config();
 
-app.use(
-    cors({
-        credentials: true,
-        methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-        allowedHeaders: ['Content-Type', 'Authorization'],
-        origin: ['http://localhost:3000/', 'http://localhost:3030/'], // whatever ports you used in frontend
-    })
-);
 app.use(express.json());
 app.use(cookieParser());
+app.use(cors({
+    origin: "https://truck.eneserden.com",
+    credentials: true
+}));
+
+
 app.use("/api/brands", brandsRouter);
 app.use("/api/models", modelsRouter);
 app.use("/api/spares", spareRoutes);

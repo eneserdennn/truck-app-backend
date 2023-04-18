@@ -38,6 +38,10 @@ export const register = async (req, res) => {
 // @route POST /api/auth/login
 // @access Public
 
+// @desc Login user
+// @route POST /api/auth/login
+// @access Public
+
 export const login = async (req, res) => {
     const { username, password } = req.body;
 
@@ -50,28 +54,34 @@ export const login = async (req, res) => {
     const user = await db.promise().query("SELECT * FROM users WHERE username = ?", [username]);
     if (user[0].length === 0) {
         res.status(400);
-        return res.json({message: "User does not exist"});
+        return res.json({ message: "User does not exist" });
     }
 
     // Check if password is correct
     const isMatch = await bcrypt.compare(password, user[0][0].password);
     if (!isMatch) {
         res.status(400);
-        return res.json({message: "Invalid credentials"});
+        return res.json({ message: "Invalid credentials" });
     }
 
     // Create and assign token
     const generateToken = (user) => {
-        const token = jwt.sign({id: user[0][0].id}, process.env.JWT_SECRET, {expiresIn: "1h"});
+        const token = jwt.sign({ id: user[0][0].id }, process.env.JWT_SECRET, { expiresIn: "1h" });
         return token;
     }
 
     const token = generateToken(user);
-    res.cookie("token", token, {httpOnly: true});
-    res.status(200).json({token});
+
+    // Set headers and cookie
+    res.header("Access-Control-Allow-Origin", "https://truck.eneserden.com");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    res.cookie("token", token, { httpOnly: true, secure: true });
 
 
-}
+    res.status(200).json({ token });
+};
+
+
 
 // @desc Logout user
 // @route POST /api/auth/logout
