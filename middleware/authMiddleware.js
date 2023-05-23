@@ -1,5 +1,5 @@
-import jwt from "jsonwebtoken";
 import { db } from "../db/db.js";
+import jwt from "jsonwebtoken";
 
 export const protect = async (req, res, next) => {
     let token;
@@ -12,11 +12,9 @@ export const protect = async (req, res, next) => {
             next();
         } catch (error) {
             console.error(error);
-            return res.status(401).json({message: "Not authorized, token failed"});
+            return res.status(401).json({ message: "Not authorized, token failed" });
         }
+    } else {
+        return res.status(401).json({ message: "Not authorized, no token" });
     }
-
-    if (!token) {
-        return res.status(401).json({message: "Not authorized, no token"});
-    }
-}
+};

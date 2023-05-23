@@ -1,24 +1,24 @@
 import * as dotenv from "dotenv";
-import express from "express";
-import cors from "cors";
+
+import authRoutes from "./routes/auth.js";
 import brandsRouter from "./routes/brandsRoute.js";
+import cookieParser from "cookie-parser";
+import cors from "cors";
+import express from "express";
 import modelsRouter from "./routes/modelsRoute.js";
 import spareRoutes from "./routes/sparesRoute.js";
 import userRoutes from "./routes/usersRoute.js";
-import authRoutes from "./routes/auth.js";
 
-import cookieParser from "cookie-parser";
 const app = express();
-
+app.use(cors({
+    origin: ["http://localhost:3000"],
+}));
 
 dotenv.config();
 
 app.use(express.json());
 app.use(cookieParser());
-app.use(cors({
-    origin: "https://truck.eneserden.com",
-    credentials: true
-}));
+
 
 
 app.use("/api/brands", brandsRouter);

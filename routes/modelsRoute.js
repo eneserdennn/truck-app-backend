@@ -9,5 +9,5 @@ router.get("/", getModels);
 router.get("/:id", getModel);
 router.post("/", protect, postModel);
 router.delete("/:id", protect, deleteModel);
-router.put("/:id", protect, updateModel);
+router.put("/:id",protect, updateModel);
 export default router;

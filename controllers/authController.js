@@ -1,14 +1,9 @@
-import jwt from "jsonwebtoken";
+import asyncHandler from "express-async-handler";
 import bcrypt from "bcryptjs";
-import { db} from "../db/db.js";
+import { db } from "../db/db.js";
+import jwt from "jsonwebtoken";
 
-// @desc Register new user
-// @route POST /api/auth/register
-// @access Public
-
-
-// const users = await db.promise().query("SELECT * FROM users");
-export const register = async (req, res) => {
+export const register = asyncHandler(async (req, res) => {
     const { username, email, password } = req.body;
 
     if (!username || !email || !password) {
@@ -20,29 +15,20 @@ export const register = async (req, res) => {
     const user = await db.promise().query("SELECT * FROM users WHERE email = ?", [email]);
     if (user[0].length > 0) {
         res.status(400);
-        return res.json({message: "User already exists"});
+        return res.json({ message: "User already exists" });
     }
-
 
     // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
     // Create user
-    const newUser = await db.promise().query("INSERT INTO users SET ?", {username, email, password: hashedPassword});
-    res.status(201).json({username, email});
+    const newUser = await db.promise().query("INSERT INTO users SET ?", { username, email, password: hashedPassword });
+    res.status(201).json({ username, email });
 
-}
+});
 
-// @desc Login user
-// @route POST /api/auth/login
-// @access Public
-
-// @desc Login user
-// @route POST /api/auth/login
-// @access Public
-
-export const login = async (req, res) => {
+export const login = asyncHandler(async (req, res) => {
     const { username, password } = req.body;
 
     if (!username || !password) {
@@ -64,29 +50,20 @@ export const login = async (req, res) => {
         return res.json({ message: "Invalid credentials" });
     }
 
-    // Create and assign token
-    const generateToken = (user) => {
-        const token = jwt.sign({ id: user[0][0].id }, process.env.JWT_SECRET, { expiresIn: "1h" });
-        return token;
-    }
+    // Create token
+    const token = jwt.sign({ id: user[0][0].id }, process.env.JWT_SECRET, { expiresIn: "30d" });
 
-    const token = generateToken(user);
+    res.json({
+        token,
+        user: {
+            id: user[0][0].id,
+            username: user[0][0].username,
+            email: user[0][0].email
+        }
+    });
 
-    // Set headers and cookie
-    res.header("Access-Control-Allow-Origin", "https://truck.eneserden.com");
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-    res.cookie("token", token, { httpOnly: true, secure: true });
+});
 
-
-    res.status(200).json({ token });
-};
-
-
-
-// @desc Logout user
-// @route POST /api/auth/logout
-// @access Private
-
-export const logout = async (req, res) => {
-    res.json({message: "Logout User"});
-}
+export const logout = asyncHandler(async (req, res) => {
+    res.send("Logout");
+});
